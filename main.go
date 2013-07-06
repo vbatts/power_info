@@ -1,10 +1,13 @@
 package main
 
 import (
+	"bufio"
 	"bytes"
+	"encoding/csv"
 	"encoding/json"
 	"flag"
 	"fmt"
+	"io"
 	"io/ioutil"
 	"os"
 	"path/filepath"
@@ -12,8 +15,27 @@ import (
 	"time"
 )
 
+func ParseToCsv(filename string, output io.Writer) (err error) {
+	fh, err := os.Open(filename)
+	if err != nil {
+		return err
+	}
+	b_reader := bufio.NewReader(fh)
+	c_writer := csv.NewWriter(output)
+  c_writer.Write([]string{
+    "Epoch Nano","Time","Key","Version",
+  })
+  _ = b_reader
+
+	return nil
+}
+
 func main() {
 	flag.Parse()
+
+	if len(fileToParseToCSV) > 0 {
+		os.Exit(0)
+	}
 
 	powers, err := filepath.Glob(POWER + "*")
 	if err != nil {
@@ -69,13 +91,15 @@ func main() {
 
 func init() {
 	flag.BoolVar(&quiet, "quiet", false, "less output")
+	flag.StringVar(&fileToParseToCSV, "parse", "", "parse this json.log file and render it to a CSV (for spreadsheeting)")
 }
 
 var (
-	POWER    = "/sys/class/power_supply/"
-	LOAD_AVG = "/proc/loadavg"
-	VERSION  = "/proc/version"
-	quiet    bool
+	POWER            = "/sys/class/power_supply/"
+	LOAD_AVG         = "/proc/loadavg"
+	VERSION          = "/proc/version"
+	quiet            bool
+	fileToParseToCSV string
 )
 
 // a representation of /proc/loadavg, leaving of the PID of the last process
