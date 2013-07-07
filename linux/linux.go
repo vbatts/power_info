@@ -1,7 +1,7 @@
 package linux
 
 import (
-  "bytes"
+	"bytes"
 	"fmt"
 	"io/ioutil"
 	"os"
@@ -9,10 +9,10 @@ import (
 )
 
 var (
-	PowerSupplyPath    = "/sys/class/power_supply/"
-	LoadAvgPath = "/proc/loadavg"
-	VersionPath  = "/proc/version"
-	quiet    bool
+	PowerSupplyPath = "/sys/class/power_supply/"
+	LoadAvgPath     = "/proc/loadavg"
+	VersionPath     = "/proc/version"
+	quiet           bool
 )
 
 // set quiet: true or false
@@ -28,21 +28,14 @@ type LoadAvg struct {
 
 // get the current LoadAvg
 func GetLoadAvg() LoadAvg {
-	fh, err := os.Open(LoadAvgPath)
+	str, err := StringFromFile(LoadAvgPath)
 	if err != nil {
 		if !quiet {
 			fmt.Fprintf(os.Stderr, "WARN: %s\n", err)
 		}
 		return LoadAvg{}
 	}
-	b, err := ioutil.ReadAll(fh)
-	if err != nil {
-		if !quiet {
-			fmt.Fprintf(os.Stderr, "WARN: %s\n", err)
-		}
-		return LoadAvg{}
-	}
-	values := strings.Split(strings.TrimRight(bytes.NewBuffer(b).String(), " \n"), " ")
+	values := strings.Split(str, " ")
 	sAndE := strings.Split(values[3], "/")
 	return LoadAvg{
 		values[0],
@@ -55,21 +48,14 @@ func GetLoadAvg() LoadAvg {
 
 // Version of the current running kernel, /proc/version
 func GetVersion() string {
-	fh, err := os.Open(VersionPath)
+	str, err := StringFromFile(VersionPath)
 	if err != nil {
 		if !quiet {
 			fmt.Fprintf(os.Stderr, "WARN: %s\n", err)
 		}
 		return ""
 	}
-	b, err := ioutil.ReadAll(fh)
-	if err != nil {
-		if !quiet {
-			fmt.Fprintf(os.Stderr, "WARN: %s\n", err)
-		}
-		return ""
-	}
-	return strings.TrimRight(bytes.NewBuffer(b).String(), " \n")
+  return str
 }
 
 /*
@@ -85,6 +71,19 @@ type Info struct {
 	Values  map[string]string
 	Load    LoadAvg `json:",omitempty"`
 	Version string
+}
+
+// reusing this all over the place
+func StringFromFile(filename string) (string, error) {
+	fh, err := os.Open(filename)
+	if err != nil {
+		return "", err
+	}
+	b, err := ioutil.ReadAll(fh)
+	if err != nil {
+		return "", err
+	}
+	return strings.TrimRight(bytes.NewBuffer(b).String(), " \n"), nil
 }
 
 // Convenience Method for checking files
