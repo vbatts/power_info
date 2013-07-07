@@ -17,7 +17,9 @@ Or add it to a crontab to continue collection to a file:
 
 Read the file into mongo for playing with, or aggregating the numbers
 
-	mongoimport --db power_info -c info --upsert --file ./tmp/power_info.json.log
+	$> mongo power_info
+	>  db.info.ensureIndex( { "Time": 1, "Key": 1 } )
+	$> mongoimport --db power_info -c info --upsertFields Time,Key --file ./tmp/power_info.json.log
 
 I guess you could just pipe the info straight to mongo as well. Just giving ideas.
 
