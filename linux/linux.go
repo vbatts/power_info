@@ -55,7 +55,7 @@ func GetVersion() string {
 		}
 		return ""
 	}
-  return str
+	return str
 }
 
 /*
