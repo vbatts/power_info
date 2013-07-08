@@ -1,15 +1,12 @@
 package main
 
 import (
-	"bytes"
 	"encoding/json"
 	"flag"
 	"fmt"
 	"github.com/vbatts/power_info/linux"
-	"io/ioutil"
 	"os"
 	"path/filepath"
-	"strings"
 	"time"
 )
 
@@ -43,21 +40,12 @@ func main() {
 		for _, file := range files {
 			basename := filepath.Base(file)
 			if linux.IsFile(file) {
-				fh, err := os.Open(file)
+				str, err := linux.StringFromFile(file)
 				if err != nil {
-					if !quiet {
-						fmt.Fprintf(os.Stderr, "WARN: %s\n", err)
-					}
-					continue
+					fmt.Fprintf(os.Stderr, "ERROR: reading file [%s]: %s\n", file, err)
+				} else {
+					info.Values[basename] = str
 				}
-				b, err := ioutil.ReadAll(fh)
-				if err != nil {
-					if !quiet {
-						fmt.Fprintf(os.Stderr, "WARN: %s\n", err)
-					}
-					continue
-				}
-				info.Values[basename] = strings.TrimRight(bytes.NewBuffer(b).String(), " \n")
 			} else {
 				if !quiet {
 					fmt.Fprintf(os.Stderr, "WARN: [%s] does not appear to be a file\n", file)
