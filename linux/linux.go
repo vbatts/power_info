@@ -1,9 +1,8 @@
 package linux
 
 import (
-	"bytes"
 	"fmt"
-	"io/ioutil"
+	"github.com/vbatts/power_info/helper"
 	"os"
 	"strings"
 )
@@ -28,7 +27,7 @@ type LoadAvg struct {
 
 // get the current LoadAvg
 func GetLoadAvg() LoadAvg {
-	str, err := StringFromFile(LoadAvgPath)
+	str, err := helper.StringFromFile(LoadAvgPath)
 	if err != nil {
 		if !quiet {
 			fmt.Fprintf(os.Stderr, "WARN: %s\n", err)
@@ -48,7 +47,7 @@ func GetLoadAvg() LoadAvg {
 
 // Version of the current running kernel, /proc/version
 func GetVersion() string {
-	str, err := StringFromFile(VersionPath)
+	str, err := helper.StringFromFile(VersionPath)
 	if err != nil {
 		if !quiet {
 			fmt.Fprintf(os.Stderr, "WARN: %s\n", err)
@@ -71,25 +70,4 @@ type Info struct {
 	Values  map[string]string
 	Load    LoadAvg `json:",omitempty"`
 	Version string
-}
-
-// reusing this all over the place
-func StringFromFile(filename string) (string, error) {
-	fh, err := os.Open(filename)
-	if err != nil {
-		return "", err
-	}
-	b, err := ioutil.ReadAll(fh)
-	if err != nil {
-		return "", err
-	}
-	return strings.TrimRight(bytes.NewBuffer(b).String(), " \n"), nil
-}
-
-// Convenience Method for checking files
-func IsFile(filename string) bool {
-	if fi, _ := os.Stat(filename); fi.Mode().IsRegular() {
-		return true
-	}
-	return false
 }

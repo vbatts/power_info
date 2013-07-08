@@ -5,6 +5,7 @@ import (
 	"flag"
 	"fmt"
 	"github.com/vbatts/power_info/linux"
+	"github.com/vbatts/power_info/helper"
 	"os"
 	"path/filepath"
 	"time"
@@ -39,8 +40,8 @@ func main() {
 		}
 		for _, file := range files {
 			basename := filepath.Base(file)
-			if linux.IsFile(file) {
-				str, err := linux.StringFromFile(file)
+			if helper.IsFile(file) {
+				str, err := helper.StringFromFile(file)
 				if err != nil {
 					fmt.Fprintf(os.Stderr, "ERROR: reading file [%s]: %s\n", file, err)
 				} else {
