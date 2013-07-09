@@ -60,7 +60,11 @@ func GetVersion() string {
 	return str
 }
 
-// Abstract interface for what constitutes a power supply
+/*
+Abstract interface for what constitutes a power supply
+
+Not sure what to do with this yet.
+*/
 type PowerSupply interface {
 	GetInfo() (*Info, error)
 }
@@ -171,7 +175,7 @@ func (b *Battery) ChargeFull() int64 {
 }
 
 func (b *Battery) Percent() float64 {
-	return float64(b.ChargeNow()) / float64(b.ChargeFull())
+	return float64(100) * float64(b.ChargeNow()) / float64(b.ChargeFull())
 }
 
 func (b *Battery) GetInfo() (*Info, error) {
