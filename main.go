@@ -7,18 +7,21 @@ import (
 	"github.com/vbatts/power_info/linux"
 	"os"
 	"strings"
+	"time"
 )
 
 var (
-	quiet   bool
-	percent bool
+	quiet           bool
+	battery_rate    bool
+	battery_percent bool
 )
 
 func main() {
 	flag.Parse()
 	linux.SetQuiet(quiet)
 
-	if percent {
+	// print battery percentage, and exit
+	if battery_percent {
 		batts, err := linux.GetBatteries()
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "ERROR: %s\n", err)
@@ -34,23 +37,76 @@ func main() {
 				batts[0].Percent(),
 				batts[0].Status())
 		default:
-			var (
-				charge_sum int64 = 0
-				full_sum   int64 = 0
-				batt_strs  []string
-			)
+			var batt_strs []string
 			for _, batt := range batts {
-				charge_sum = charge_sum + batt.ChargeNow()
-				full_sum = full_sum + batt.ChargeFull()
 				batt_strs = append(batt_strs, batt.Key)
 			}
 			fmt.Printf("%s: %3.2f%% \n",
 				strings.Join(batt_strs, ", "),
-				(float64(100) * float64(charge_sum) / float64(full_sum)))
+				linux.Percent(batts))
 		}
 		os.Exit(0)
 	}
 
+	/*
+	  roll with the printing of battery rate used
+
+	  Big and nasty. Perhaps this could be bottled into the Battery struct.
+	  such that you could see the rate and duration of each battery independently?
+	*/
+	if battery_rate {
+		var (
+			c_curr_charge_ema = make(chan float64)
+			c_diff            = make(chan int64)
+		)
+		batts, err := linux.GetBatteries()
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "ERROR: %s\n", err)
+			os.Exit(2)
+		}
+
+		// subroutine to get the current avg and last diff
+		go func() {
+			var (
+				count                    int64
+				diff                     int64
+				curr_charge, prev_charge int64
+				prev_charge_ema          float64
+				curr_charge_ema          float64
+			)
+			for {
+				curr_charge = linux.ChargeNow(batts)
+				if curr_charge == prev_charge {
+					time.Sleep(333 * time.Millisecond)
+					continue
+				}
+
+				diff = (curr_charge - prev_charge)
+				c_diff <- diff // deadloack
+
+				fmt.Fprintln(os.Stderr, "curr_charge:", curr_charge, "; prev_charge:", prev_charge)
+				prev_charge = curr_charge
+				count++
+				// https://en.wikipedia.org/wiki/Moving_average#Exponential_moving_average
+				curr_charge_ema = A(count)*float64(diff) + (1-A(count))*prev_charge_ema
+				prev_charge_ema = curr_charge_ema
+				fmt.Fprintln(os.Stderr, "diff:", diff, "; ema:", curr_charge_ema)
+				c_curr_charge_ema <- curr_charge_ema
+
+				time.Sleep(500 * time.Millisecond)
+			}
+		}()
+
+		for {
+			duration := (float64(<-c_diff) / <-c_curr_charge_ema)
+			fmt.Printf("%3.2f%% est: %3.2fs\n",
+				linux.Percent(batts), duration)
+		}
+
+		os.Exit(0) // should never make it here
+	}
+
+	// default is to print power_supply info and quit
 	for _, power := range linux.GetPowerSupplies() {
 		info, err := power.GetInfo()
 		if err != nil {
@@ -66,7 +122,13 @@ func main() {
 	}
 }
 
+// https://en.wikipedia.org/wiki/Moving_average#Exponential_moving_average
+func A(n int64) float64 {
+	return float64(2) / float64(n+1)
+}
+
 func init() {
 	flag.BoolVar(&quiet, "quiet", false, "less output")
-	flag.BoolVar(&percent, "percent", false, "show battery percent and exit")
+	flag.BoolVar(&battery_percent, "percent", false, "show battery percent and exit")
+	flag.BoolVar(&battery_rate, "rate", false, "show battery ")
 }
