@@ -57,7 +57,7 @@ func main() {
 	if battery_rate {
 		var (
 			c_curr_charge_ema = make(chan float64)
-			c_diff            = make(chan int64)
+			c_rate            = make(chan float64)
 		)
 		batts, err := linux.GetBatteries()
 		if err != nil {
@@ -68,29 +68,40 @@ func main() {
 		// subroutine to get the current avg and last diff
 		go func() {
 			var (
-				count                    int64
-				diff                     int64
-				curr_charge, prev_charge int64
-				prev_charge_ema          float64
-				curr_charge_ema          float64
+				count                            int64
+				diff                             int64
+				prev_charge, curr_charge         int64
+				prev_time, curr_time             int64
+				prev_charge_ema, curr_charge_ema float64 = 1,1
+				prev_rate_ema, curr_rate_ema     float64 = 1,1
 			)
+			prev_time = time.Now().UnixNano()
+
 			for {
 				curr_charge = linux.ChargeNow(batts)
 				if curr_charge == prev_charge {
 					time.Sleep(333 * time.Millisecond)
 					continue
 				}
+				count++
 
 				diff = (curr_charge - prev_charge)
-				c_diff <- diff // deadloack
-
-				fmt.Fprintln(os.Stderr, "curr_charge:", curr_charge, "; prev_charge:", prev_charge)
 				prev_charge = curr_charge
-				count++
+
 				// https://en.wikipedia.org/wiki/Moving_average#Exponential_moving_average
 				curr_charge_ema = A(count)*float64(diff) + (1-A(count))*prev_charge_ema
 				prev_charge_ema = curr_charge_ema
-				fmt.Fprintln(os.Stderr, "diff:", diff, "; ema:", curr_charge_ema)
+
+				curr_time = time.Now().UnixNano()
+        rate := float64(diff)/float64(curr_time-prev_time)
+				curr_rate_ema = A(count)*rate + (1-A(count))*prev_rate_ema
+				prev_rate_ema = curr_rate_ema
+				prev_time = curr_time
+        fmt.Println(rate)
+        fmt.Println(curr_rate_ema)
+
+
+        c_rate <-curr_rate_ema
 				c_curr_charge_ema <- curr_charge_ema
 
 				time.Sleep(500 * time.Millisecond)
@@ -98,7 +109,7 @@ func main() {
 		}()
 
 		for {
-			duration := (float64(<-c_diff) / <-c_curr_charge_ema)
+			duration := (<-c_rate * <-c_curr_charge_ema)
 			fmt.Printf("%3.2f%% est: %3.2fs\n",
 				linux.Percent(batts), duration)
 		}
