@@ -201,6 +201,29 @@ func (b *Battery) GetInfo() (*Info, error) {
 	return &info, nil
 }
 
+// Convenience for reduce the ChargeNow of a set of batteries
+func ChargeNow(batts []Battery) int64 {
+	var charge_sum int64 = 0
+	for _, batt := range batts {
+		charge_sum = charge_sum + batt.ChargeNow()
+	}
+	return charge_sum
+}
+
+// Convenience for reduce the ChargeFull of a set of batteries
+func ChargeFull(batts []Battery) int64 {
+	var full_sum int64 = 0
+	for _, batt := range batts {
+		full_sum = full_sum + batt.ChargeFull()
+	}
+	return full_sum
+}
+
+// Convenience for reduce the Percent of a set of batteries
+func Percent(batts []Battery) float64 {
+	return (float64(100) * float64(ChargeNow(batts)) / float64(ChargeFull(batts)))
+}
+
 // given the Battery.Key, get the path for this power_supply
 func psp(key, value string) string {
 	if len(value) == 0 {
