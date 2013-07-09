@@ -27,6 +27,14 @@ This was a hasty hack to collect stats from a new battery I bought for an old
 laptop. I wanted to be collecting stats from the time I put the battery on,
 so I might see when it starts to go south. :-)
 
+
+Also, you can use the -battery command, for simple viewing of battery charge percent
+
+	$> power_info -battery
+  BAT0: 77.07% (Charging)
+
+This ought to show a compiled percent if you have more than one battery.
+
 Compile/Install
 ---------------
 
