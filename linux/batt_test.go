@@ -1,4 +1,4 @@
-package batt
+package linux
 
 import (
 	"fmt"
