@@ -32,10 +32,15 @@ func main() {
 			fmt.Fprintf(os.Stderr, "No batteries present\n", err)
 			os.Exit(2)
 		case 1:
-			fmt.Printf("%s: %3.2f%% (%s)\n",
-				batts[0].Key,
-				batts[0].Percent(),
-				batts[0].Status())
+			if quiet {
+				fmt.Printf("%3.2f%%\n",
+					batts[0].Percent())
+			} else {
+				fmt.Printf("%s: %3.2f%% (%s)\n",
+					batts[0].Key,
+					batts[0].Percent(),
+					batts[0].Status())
+			}
 		default:
 			var batt_strs []string
 			for _, batt := range batts {
@@ -72,8 +77,8 @@ func main() {
 				diff                             int64
 				prev_charge, curr_charge         int64
 				prev_time, curr_time             int64
-				prev_charge_ema, curr_charge_ema float64 = 1,1
-				prev_rate_ema, curr_rate_ema     float64 = 1,1
+				prev_charge_ema, curr_charge_ema float64 = 1, 1
+				prev_rate_ema, curr_rate_ema     float64 = 1, 1
 			)
 			prev_time = time.Now().UnixNano()
 
@@ -93,15 +98,14 @@ func main() {
 				prev_charge_ema = curr_charge_ema
 
 				curr_time = time.Now().UnixNano()
-        rate := float64(diff)/float64(curr_time-prev_time)
+				rate := float64(diff) / float64(curr_time-prev_time)
 				curr_rate_ema = A(count)*rate + (1-A(count))*prev_rate_ema
 				prev_rate_ema = curr_rate_ema
 				prev_time = curr_time
-        fmt.Println(rate)
-        fmt.Println(curr_rate_ema)
+				fmt.Println(rate)
+				fmt.Println(curr_rate_ema)
 
-
-        c_rate <-curr_rate_ema
+				c_rate <- curr_rate_ema
 				c_curr_charge_ema <- curr_charge_ema
 
 				time.Sleep(500 * time.Millisecond)

@@ -1,10 +1,10 @@
 package helper
 
 import (
-  "os"
-  "io/ioutil"
-  "strings"
-  "bytes"
+	"bytes"
+	"io/ioutil"
+	"os"
+	"strings"
 )
 
 // reusing this all over the place
@@ -22,7 +22,7 @@ func StringFromFile(filename string) (string, error) {
 
 // Convenience Method for checking files
 func IsFile(filename string) bool {
-	if fi, _ := os.Stat(filename); fi.Mode().IsRegular() {
+	if fi, err := os.Stat(filename); err == nil && fi.Mode().IsRegular() {
 		return true
 	}
 	return false
