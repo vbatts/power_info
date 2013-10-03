@@ -33,8 +33,9 @@ func main() {
 			os.Exit(2)
 		case 1:
 			if quiet {
-				fmt.Printf("%3.2f%%\n",
-					batts[0].Percent())
+				fmt.Printf("%3.2f%%[%s]\n",
+					batts[0].Percent(),
+					string(batts[0].Status()[0]))
 			} else {
 				fmt.Printf("%s: %3.2f%% (%s)\n",
 					batts[0].Key,
